@@ -89,14 +89,14 @@ function pbTypeMap(
     case "sfixed64":
       return `number${repeated ? "[]" : ""} /* ${type} */`;
     case "bytes":
-      return `Uint8Array${repeated ? "[]" : ""} | undefined`;
+      return `Uint8Array${repeated ? "[]" : " | undefined"}`;
     case "map":
       // deno-fmt-ignore
       return `Record<${pbTypeMap({ type: map!.from })}, ${pbTypeMap({ type: map!.to })}>`;
     case "string":
       return `string${repeated ? "[]" : ""}`;
     default:
-      return `${type}${repeated ? "[]" : ""} | undefined`;
+      return `${type}${repeated ? "[]" : " | undefined"}`;
   }
 }
 
