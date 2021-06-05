@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+message Data {
+  enum DataType {
+    Raw = 0;
+    Directory = 1;
+    File = 2;
+    Metadata = 3;
+    Symlink = 4;
+    HAMTShard = 5;
+  }
+
+  DataType Type = 1;
+  bytes Data = 2;
+  uint64 filesize = 3;
+  repeated uint64 blocksizes = 4;
+  uint64 hashType = 5;
+  uint64 fanout = 6;
+  uint32 mode = 7;
+  UnixTime mtime = 8;
+}
+
+message Metadata { string MimeType = 1; }
+
+message UnixTime {
+  int64 Seconds = 1;
+  fixed32 FractionalNanoseconds = 2;
+}
