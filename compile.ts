@@ -368,7 +368,7 @@ function transformFieldsForWrite(
 ) {
   let buffer = "";
   buffer += ctx.single(
-    `export function write(obj: ${name}, pbf: Pbf) {`,
+    `export function write(obj: Partial<${name}>, pbf: Pbf) {`,
   );
   buffer += ctx.wrap((ctx) => transformFieldsForWriteInner(ctx, fields));
   buffer += ctx.single(`}`);
@@ -420,7 +420,7 @@ function getTopLevelExports(ctx: CodegenContext, path: string): string[] {
 
 function transformImport(ctx: CodegenContext, source: string) {
   let buffer = "";
-  const path = posix.normalize(source.replace(/\.proto$/g, ".ts"));
+  const path = posix.normalize(source.replace(/\.proto$/g, ".generated.ts"));
   const exports = getTopLevelExports(ctx, source);
 
   buffer += ctx.single(`import {`);

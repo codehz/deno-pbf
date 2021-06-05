@@ -9,7 +9,7 @@ declare class Pbf {
 
   pos: number;
 
-  constructor(buf: BufferSource);
+  constructor(buf?: BufferSource);
 
   destroy(): void;
 
