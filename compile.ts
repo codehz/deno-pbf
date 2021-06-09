@@ -48,8 +48,8 @@ class CodegenContext {
     return this.renderSpace(addition) + text + "\n";
   }
 
-  multi(text: string) {
-    return text.split("\n")
+  multi(...text: string[]) {
+    return text
       .map((line) => this.single(line))
       .join("\n");
   }
@@ -126,6 +126,9 @@ function pbTypeDefault(source: string): string {
 
 function transformFieldsForInterface(ctx: CodegenContext, source: Field) {
   let buffer = "";
+  if (source.options.deprecated) {
+    buffer += ctx.single(`/** @deprecated */`);
+  }
   buffer += ctx.single(`${source.name}: ${pbTypeMap(source)},`);
   return buffer;
 }
@@ -136,8 +139,13 @@ function transformFieldsForRead(ctx: CodegenContext, fields: Field[]) {
   ctx.wrap((ctx) => {
     buffer += ctx.single(`return pbf.readFields(_readField, {`);
     buffer += ctx.wrap((ctx) =>
-      fields.map(({ name, type, repeated }) =>
-        ctx.single(`${name}: ${repeated ? "[]" : pbTypeDefault(type)},`)
+      fields.map(({ name, type, repeated, options }) =>
+        ctx.single(
+          `${name}: ${
+            repeated ? "[]" : options["js_default"] ?? options["default"] ??
+              pbTypeDefault(type)
+          },`,
+        )
       )
     ).join("");
     buffer += ctx.single(`}, end);`);
@@ -386,6 +394,9 @@ function transformMessage(ctx: CodegenContext, source: Message) {
     source.messages.map((x) => transformMessage(ctx, x))
   ).join("");
   ctx.wrap((ctx) => {
+    if (source.options.deprecated) {
+      buffer += ctx.single(`/** @deprecated */`);
+    }
     buffer += ctx.single(`export interface ${source.name} {`);
     buffer += ctx.wrap((ctx) =>
       source.fields.map((x) => transformFieldsForInterface(ctx, x))
