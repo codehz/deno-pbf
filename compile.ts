@@ -8,7 +8,7 @@ import {
   Schema,
 } from "./protocol-buffers-schema.ts";
 
-import { join, posix } from "https://deno.land/std@0.97.0/path/mod.ts";
+import { join, posix } from "https://deno.land/std@0.177.0/path/mod.ts";
 
 export type CompilerOptions = {
   parse: typeof parse;

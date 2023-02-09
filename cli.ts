@@ -2,7 +2,7 @@ import { compile, parse } from "./mod.ts";
 import {
   Args,
   parse as parseCLI,
-} from "https://deno.land/std@0.97.0/flags/mod.ts";
+} from "https://deno.land/std@0.177.0/flags/mod.ts";
 
 async function main(args: Args) {
   console.assert(args._.length > 0, "require at least 1 input file");
@@ -11,10 +11,12 @@ async function main(args: Args) {
   const input = await Deno.readTextFile(args._[0] + "");
   const schema = parse(input);
   if (args.schema) {
-    console.log(Deno.inspect(schema, {
-      colors: true,
-      depth: 100,
-    }));
+    console.log(
+      Deno.inspect(schema, {
+        colors: true,
+        depth: 100,
+      })
+    );
     return;
   }
   const generated = compile(schema);
@@ -25,6 +27,8 @@ async function main(args: Args) {
   }
 }
 
-await main(parseCLI(Deno.args, {
-  alias: { "output": "o" },
-}));
+await main(
+  parseCLI(Deno.args, {
+    alias: { output: "o" },
+  })
+);
