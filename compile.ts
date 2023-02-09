@@ -15,50 +15,95 @@ export type CompilerOptions = {
   basedir: string;
 };
 
-class CodegenContext {
-  private enums: Set<string> = new Set<string>();
+abstract class CodegenContext {
+  abstract options: CompilerOptions;
+  abstract indent: number;
+  abstract addEnum(fullname: string): void;
+  abstract isEnum(fullname: string, original?: string): boolean;
+  next(name?: string): CodegenContext {
+    if (name) {
+      return new CodegenSubContext(this.options, this.indent + 1, this, name);
+    }
+    return new CodegenIndentContext(this.options, this.indent + 1, this);
+  }
+  wrap<R>(cb: (ctx: CodegenContext) => R): R;
+  wrap<R>(name: string, cb: (ctx: CodegenContext) => R): R;
+  wrap(...args: any[]) {
+    if (args.length === 2) {
+      return args[1](this.next(args[0]));
+    }
+    return args[0](this.next());
+  }
+  #renderSpace(addition: number) {
+    return "  ".repeat(this.indent + addition);
+  }
+  single(text: string, addition = 0) {
+    return this.#renderSpace(addition) + text + "\n";
+  }
+  multi(...text: string[]) {
+    return text.map((line) => this.single(line)).join("\n");
+  }
+}
+
+class CodegenIndentContext extends CodegenContext {
   constructor(
     public readonly options: CompilerOptions,
     public readonly indent: number = 0,
-    public readonly parent?: CodegenContext,
+    public readonly parent: CodegenContext,
   ) {
+    super();
+  }
+  addEnum(fullname: string): void {
+    this.parent.addEnum(fullname);
+  }
+  isEnum(fullname: string, original = fullname): boolean {
+    return this.parent.isEnum(fullname, original);
+  }
+}
+
+class CodegenSubContext extends CodegenContext {
+  constructor(
+    public readonly options: CompilerOptions,
+    public readonly indent: number = 0,
+    public readonly parent: CodegenContext,
+    public readonly name: string,
+  ) {
+    super();
+  }
+  addEnum(fullname: string): void {
+    this.parent.addEnum(this.name + "." + fullname);
+  }
+  isEnum(fullname: string, original = fullname): boolean {
+    return this.parent.isEnum(this.name + "." + fullname, original) ||
+      (fullname !== original &&
+        this.parent.isEnum(this.name + "." + original, original));
+  }
+}
+
+class CodegenRootContext extends CodegenContext {
+  #enums = new Set<string>();
+  constructor(
+    public readonly options: CompilerOptions,
+    public readonly indent: number = 0,
+    public readonly parent?: CodegenRootContext,
+  ) {
+    super();
   }
 
-  addEnum(name: string) {
-    this.enums.add(name);
+  addEnum(fullname: string) {
+    this.#enums.add(fullname);
   }
 
-  isEnum(name: string): boolean {
-    return this.enums.has(name) || (this.parent?.isEnum(name) ?? false);
-  }
-
-  next(): CodegenContext {
-    return new CodegenContext(this.options, this.indent + 1, this);
-  }
-
-  wrap<R>(cb: (ctx: CodegenContext) => R): R {
-    return cb(this.next());
-  }
-
-  private renderSpace(addition: number) {
-    return "  ".repeat(this.indent + addition);
-  }
-
-  single(text: string, addition = 0) {
-    return this.renderSpace(addition) + text + "\n";
-  }
-
-  multi(...text: string[]) {
-    return text
-      .map((line) => this.single(line))
-      .join("\n");
+  isEnum(fullname: string, original = fullname): boolean {
+    return this.#enums.has(fullname) ||
+      (original !== fullname && this.#enums.has(original));
   }
 }
 
 function transformEnum(ctx: CodegenContext, source: Enum) {
   let buffer = "";
   buffer += ctx.single(`export enum ${source.name} {`);
-  ctx.wrap((ctx) => {
+  ctx.wrap(source.name, (ctx) => {
     for (const [key, { value }] of Object.entries(source.values)) {
       buffer += ctx.single(`${key} = ${value},`);
     }
@@ -67,13 +112,15 @@ function transformEnum(ctx: CodegenContext, source: Enum) {
   return buffer;
 }
 
-function pbTypeMap(
-  { type, map, repeated }: {
-    type: string;
-    map?: { from: string; to: string };
-    repeated?: boolean;
-  },
-): string {
+function pbTypeMap({
+  type,
+  map,
+  repeated,
+}: {
+  type: string;
+  map?: { from: string; to: string };
+  repeated?: boolean;
+}): string {
   switch (type) {
     case "double":
     case "float":
@@ -292,7 +339,10 @@ function transformFieldsForReadFields(
   buffer += ctx.single(
     `function _readField(tag: number, obj: ${name}, pbf: Pbf) {`,
   );
-  buffer += ctx.wrap((ctx) => transformFieldsForReadFieldsInner(ctx, fields));
+  buffer += ctx.wrap(
+    name,
+    (ctx) => transformFieldsForReadFieldsInner(ctx, fields),
+  );
   buffer += ctx.single(`}`);
   return buffer;
 }
@@ -378,21 +428,22 @@ function transformFieldsForWrite(
   buffer += ctx.single(
     `export function write(obj: Partial<${name}>, pbf: Pbf) {`,
   );
-  buffer += ctx.wrap((ctx) => transformFieldsForWriteInner(ctx, fields));
+  buffer += ctx.wrap(name, (ctx) => transformFieldsForWriteInner(ctx, fields));
   buffer += ctx.single(`}`);
   return buffer;
 }
 
 function transformMessage(ctx: CodegenContext, source: Message) {
-  source.enums.forEach((e) => ctx.addEnum(e.name));
+  source.enums.forEach((e) => ctx.next(source.name).addEnum(e.name));
   let buffer = "";
   buffer += "\n";
   buffer += ctx.single(`export namespace ${source.name} {`);
-  buffer += ctx.wrap((ctx) => source.enums.map((x) => transformEnum(ctx, x)))
+  buffer += ctx
+    .wrap(source.name, (ctx) => source.enums.map((x) => transformEnum(ctx, x)))
     .join("");
-  buffer += ctx.wrap((ctx) =>
-    source.messages.map((x) => transformMessage(ctx, x))
-  ).join("");
+  buffer += ctx
+    .wrap((ctx) => source.messages.map((x) => transformMessage(ctx, x)))
+    .join("");
   ctx.wrap((ctx) => {
     if (source.options.deprecated) {
       buffer += ctx.single(`/** @deprecated */`);
@@ -417,12 +468,17 @@ function transformMessage(ctx: CodegenContext, source: Message) {
   return buffer;
 }
 
+function scanImportedEnums(ctx: CodegenContext, schema: Schema | Message) {
+  schema.enums.forEach((e) => ctx.addEnum(e.name));
+  schema.messages.forEach((m) => scanImportedEnums(ctx.next(m.name), m));
+}
+
 function getTopLevelExports(ctx: CodegenContext, path: string): string[] {
   const fullpath = join(ctx.options.basedir, path);
-  console.log(fullpath);
 
   const content = Deno.readTextFileSync(fullpath);
   const schema = ctx.options.parse(content);
+  scanImportedEnums(ctx, schema);
   return [
     ...schema.enums.map(({ name }) => name),
     ...schema.messages.map(({ name }) => name),
@@ -441,12 +497,12 @@ function transformImport(ctx: CodegenContext, source: string) {
   return buffer;
 }
 
-function transformSchema(ctx: CodegenContext, source: Schema): string {
-  source.enums.forEach((e) => ctx.addEnum(e.name));
+function transformSchema(ctx: CodegenContext, schema: Schema): string {
+  schema.enums.forEach((e) => ctx.addEnum(e.name));
   const list = [];
-  list.push(...source.imports.map((x) => transformImport(ctx, x)));
-  list.push(...source.enums.map((x) => transformEnum(ctx, x)));
-  list.push(...source.messages.map((x) => transformMessage(ctx, x)));
+  list.push(...schema.imports.map((x) => transformImport(ctx, x)));
+  list.push(...schema.enums.map((x) => transformEnum(ctx, x)));
+  list.push(...schema.messages.map((x) => transformMessage(ctx, x)));
   return list.join("");
 }
 
@@ -460,7 +516,7 @@ export function compile(
     ...options,
   } as CompilerOptions;
   let result = "";
-  const ctx = new CodegenContext(fulloptions);
+  const ctx = new CodegenRootContext(fulloptions);
 
   result += ctx.single(`// deno-lint-ignore-file`);
   result += ctx.single(`// deno-fmt-ignore-file`);

@@ -1,0 +1,185 @@
+syntax = "proto3";
+
+package IosMsgs;
+ 
+message MsgId {
+    enum messageType{
+        UNDEFINED = 0;
+        WEB_INITIALIZE = 1;
+        SET_IDLE = 2;
+        SET_MISSION = 3;
+        TAILORING = 4;
+        
+
+        //FROM GATEWAY TO SERVER
+        OWNSHIP = 10;
+        SIM_STATUS = 11;
+        BUTTONAVAILABILITY = 12;
+        NAVAIDS_LIST = 13;
+        ILS_APPROACH = 14;
+        AIRCRAFT_PARAM_OFFLINE = 15;
+        TANKER_LIST_ANSW = 16;
+        CHANNEL_LIST_ANSW = 17;
+        MODE_LIST_ANSW = 18;
+        TEXTS_ANSW = 19;
+
+        //FROM SERVER TO GATEWAY
+        WAIT_FOR_GATE = 48;
+        GATE_READY = 49;
+        REPOSITIONING = 50;
+        FREEZE = 51;
+        SETANDRESET_BUTTON = 52;
+        MALFUNCTION_ID = 53;
+        CGPOS_SETTING = 54;
+        FUEL_SETTING = 55;
+        STORES_CONFIGURATION = 56;
+        SCENARIO = 58;
+        ATMOSPHERE_DATA = 60;
+        SET_TIME = 61;
+        SET_DATE = 62;
+        COMMS = 65;
+        ENVIRONMENT = 66;
+        SET_AAR_BUTTON = 67;
+
+        //FROM CLIENT TO SERVER
+        REPOSITION_BY_AIRPORT = 101;
+        REPOSITION_LIST_REQ = 102;
+        SCENARIO_LIST_REQ = 103;
+        MALFUNCTIONS_LIST_REQ = 104;
+        AIRPORTS_LIST_REQ = 105;
+        MANUAL_REPOSITIONING_DATA = 106;
+        RELATIVE_POSITION = 107;
+        SYNTHETIC_LIST_REQ = 108;
+        SAVE_ENTITY = 109;
+        MODIFY_ENTITY = 110;
+        SCENARIO_VRMM_SYNTHETIC = 111;
+        DELETE_ENTITY = 112;
+        MODIFY_DOCTRINE = 113;
+        KILLINHIBIT_ENTITY = 114;
+        SYNTHETIC_DB_LIST_REQ = 115;
+        RELATIVE_POSITION_LIST_REQ = 116;
+        DELETE_REPOSITION_PRESET = 117;
+        IP_ADDRESS_SETTING = 118;
+        IP_LIST_REQ = 119;
+        IP_REQ = 120;
+        TANKER_LIST_REQ = 121;
+        CHANNEL_LIST_REQ = 122;
+        MODE_LIST_REQ = 123;
+        TANKER_SELECTED = 124;
+        CHANNEL_SELECTED = 125;
+        MODE_SELECTED = 126;
+        TEXTS_REQ = 127;
+        FLOW_RATE_LEFT_SETTING = 128;
+        FLOW_RATE_RIGHT_SETTING = 129;
+        FLOW_RATE_CENTER_SETTING = 130;
+        VOLUME_CONTROL = 131;
+        SEND_PRESET_PARAMETERS = 132;
+        MODIFY_RUNTIME_ENTITY = 133;
+	JOIN_ROOM = 134;
+
+        //FROM SERVER TO CLIENT
+        CLIENT_LOCK = 150;
+        CLIENT_UNLOCK = 151;
+        CLIENT_REPOS_ERROR = 152;
+        REPOSITION_LIST_ANSW = 153;
+        SCENARIO_LIST_ANSW = 154;
+        MALFUNCTIONS_LIST_ANSW = 155;
+        AIRPORT_LIST_ANSW = 156;
+        BATTLE_DAMAGE_UPDATE = 222;
+        RESET_DAMAGE_STATE = 223;
+        TOGGLE_KILL_INHIBIT = 224;
+        MODEL_CONFIG = 157;
+        SYNTHETIC_LIST_ANSW = 158;
+        ROOM_CONFIG = 159;  
+        SYNTHETIC_DB_LIST_ANSW = 160;
+        RELATIVE_POSITION_LIST_ANSW = 161;
+        IP_LIST_ANSW = 162;
+        IP_ANSW = 163;
+        SAVE_SCENARIO_PROMPT = 164;
+
+
+        SEND_PRESETS = 202;
+        REMOVE_PRESETS = 203;
+        RESET_PRESETS = 204;
+        
+        SEND_ENTITIES = 205;
+        SEND_CAMERA_MOVE = 206;
+        DESELECT_ENTITY = 207;
+        
+        
+        //MAP MESSAGES
+        GET_MAP_ELEMENTS = 210;
+        AVAILABLE_NATIONS = 211;
+
+        SET_AIRSPACE_CIRCLE = 212;
+        SET_AIRSPACE_POLYGON = 213;
+
+        REMOVE_AIRSPACES = 214;
+		
+        SET_AIRPORT = 215;
+        SET_NAVAID = 216;
+        
+        REMOVE_AIRPORTS = 217;
+        REMOVE_NAVAIDS = 218;
+        
+        //CLIENT-GATE DIRECT MESSAGES
+        MOTION_CONTROL_CHANGE_STATE = 250;
+        MOTION_CONTROL_CHANGE_PRESSURE = 251;
+        MOTION_CONTROL_RESET_AVAILABILITY = 252;
+
+        //WHATIF MESSAGES
+        WHATIF_AVIABILITY = 300;
+        PLAYBACK_CMD = 301;
+        RECORD_CMD = 302;
+        REPLAY_REQUEST = 303;
+        BOOKMARK_REQUEST = 304;
+
+        GET_REPLAYS_LIST = 305;
+        GET_BOOKMARKS_LIST = 306;
+
+        TAKE_CONTROL_DIALOG = 307;
+        REPLAY_LIST_ANSW = 401;
+        BOOKMARKS_LIST_ANSW = 402;
+
+        GHOSTVIEW_OWNSHIP = 403;
+
+        //MULTIGATE MESSAGES
+        MULTIGATE_ASSIGN_ID = 500;
+        MULTIGATE_SELECT = 502;
+        MULTIGATE_UNSELECT = 503;
+        MULTIGATE_CMD = 504;
+        MULTIGATE_LIST = 505;
+
+        //WEAVER-SBT
+        CLOSE_MISSION = 900;
+        SBT_SCENARIO_LIST_REQ = 901;
+        SBT_SCENARIO_LIST_ANSW = 902;
+        SBT_SCENARIO_CTR = 903;
+        SBT_ENTITY_LIST_REQ = 904;
+        SBT_ENTITY_LIST_ANSW = 905;
+        SBT_ENTITY_CTR = 906;
+        ROOM_STATE_REQ = 907;
+        ROOM_STATE_ANSW = 908;
+        ROOM_CTR = 909;
+        START_SBT_CONTROL_SIMULATOR = 910;
+        STOP_SBT_CONTROL_SIMULATOR = 911;
+        GATE_ROOM_INIT = 912;
+        
+        ACK = 1000;
+        FULL_STATE = 1001;
+        OFFLINE_MODE = 1002;
+
+        WEAPONS_DATA = 1003;
+        SELECT_WEAPON = 1004;
+
+        //PORTAL
+        SIMULATOR_LIST_REQ = 2000;
+        SIMULATOR_LIST_ANSW = 2001;
+        SHOW_PORTAL = 2100;
+
+        // COCKPIT RECONSTRUCTION
+        MANAGE_SCENARIO = 3000;
+    }
+    messageType type = 1;
+    uint32 id = 2;
+}
